@@ -21,7 +21,7 @@ const https = require('https');
 const BrowserFetcher =
   require('../lib/cjs/puppeteer/node/BrowserFetcher.js').BrowserFetcher;
 
-const SUPPORTER_PLATFORMS = ['linux', 'mac', 'win32', 'win64'];
+const SUPPORTER_PLATFORMS = ['linux', 'mac', 'mac_arm', 'win32', 'win64'];
 const fetchers = SUPPORTER_PLATFORMS.map(
   (platform) => new BrowserFetcher('', { platform })
 );
@@ -138,6 +138,9 @@ async function checkOmahaProxyAvailability() {
     await Promise.all([
       fetch(
         'https://storage.googleapis.com/chromium-browser-snapshots/Mac/LAST_CHANGE'
+      ),
+      fetch(
+        'https://storage.googleapis.com/chromium-browser-snapshots/Mac_Arm/LAST_CHANGE'
       ),
       fetch(
         'https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/LAST_CHANGE'

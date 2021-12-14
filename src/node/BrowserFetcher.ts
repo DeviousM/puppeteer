@@ -41,12 +41,14 @@ const downloadURLs = {
   chrome: {
     linux: '%s/chromium-browser-snapshots/Linux_x64/%d/%s.zip',
     mac: '%s/chromium-browser-snapshots/Mac/%d/%s.zip',
+    mac_arm: '%s/chromium-browser-snapshots/Mac_Arm/%d/%s.zip',
     win32: '%s/chromium-browser-snapshots/Win/%d/%s.zip',
     win64: '%s/chromium-browser-snapshots/Win_x64/%d/%s.zip',
   },
   firefox: {
     linux: '%s/firefox-%s.en-US.%s-x86_64.tar.bz2',
     mac: '%s/firefox-%s.en-US.%s.dmg',
+    mac_arm: '%s/firefox-%s.en-US.%s.dmg',
     win32: '%s/firefox-%s.en-US.%s.zip',
     win64: '%s/firefox-%s.en-US.%s.zip',
   },
@@ -67,7 +69,7 @@ const browserConfig = {
  * Supported platforms.
  * @public
  */
-export type Platform = 'linux' | 'mac' | 'win32' | 'win64';
+export type Platform = 'linux' | 'mac' | 'mac_arm' | 'win32' | 'win64';
 
 function archiveName(
   product: Product,
@@ -76,7 +78,7 @@ function archiveName(
 ): string {
   if (product === 'chrome') {
     if (platform === 'linux') return 'chrome-linux';
-    if (platform === 'mac') return 'chrome-mac';
+    if (platform === 'mac' || platform === 'mac_arm') return 'chrome-mac';
     if (platform === 'win32' || platform === 'win64') {
       // Windows archive name changed at r591479.
       return parseInt(revision, 10) > 591479 ? 'chrome-win' : 'chrome-win32';
@@ -214,7 +216,9 @@ export class BrowserFetcher {
     }
 
     const platform = os.platform();
-    if (platform === 'darwin') this._platform = 'mac';
+    if (platform === 'darwin' && os.arch() === 'arm64')
+      this._platform = 'mac_arm';
+    else if (platform === 'darwin') this._platform = 'mac';
     else if (platform === 'linux') this._platform = 'linux';
     else if (platform === 'win32')
       this._platform = os.arch() === 'x64' ? 'win64' : 'win32';
@@ -299,10 +303,10 @@ export class BrowserFetcher {
 
     // Use Intel x86 builds on Apple M1 until native macOS arm64
     // Chromium builds are available.
-    if (os.platform() !== 'darwin' && os.arch() === 'arm64') {
-      handleArm64();
-      return;
-    }
+    // if (os.platform() !== 'darwin' && os.arch() === 'arm64') {
+    //   handleArm64();
+    //   return;
+    // }
     try {
       await downloadFile(url, archivePath, progressCallback);
       await install(archivePath, outputPath);
@@ -353,7 +357,7 @@ export class BrowserFetcher {
     const folderPath = this._getFolderPath(revision);
     let executablePath = '';
     if (this._product === 'chrome') {
-      if (this._platform === 'mac')
+      if (this._platform === 'mac' || this._platform === 'mac_arm')
         executablePath = path.join(
           folderPath,
           archiveName(this._product, this._platform, revision),
